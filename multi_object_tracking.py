@@ -48,6 +48,8 @@ if not args.get("video", False):
 else:
 	vs = cv2.VideoCapture(args["video"])
 
+def compute_vector(x,y,w,h):
+    return x+w//2, y+h//2
 # loop over frames from the video stream
 while True:
 	# grab the current frame, then handle if we are using a
@@ -61,7 +63,9 @@ while True:
 
 	# resize the frame (so we can process it faster)
 	frame = imutils.resize(frame, width=600)
-
+	print(frame.shape)
+	center = 600//2, 450//2
+	cv2.circle(frame,center,4,(0,0,255),6)
 	# grab the updated bounding box coordinates (if any) for each
 	# object that is being tracked
 	(success, boxes) = trackers.update(frame)
@@ -69,7 +73,9 @@ while True:
 	# loop over the bounding boxes and draw then on the frame
 	for box in boxes:
 		(x, y, w, h) = [int(v) for v in box]
+		cp = compute_vector(x,y,w,h)
 		cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+		cv2.arrowedLine(frame, cp, center, (0,255,0),3,8,0,0.1)
 
 	# show the output frame
 	cv2.imshow("Frame", frame)
