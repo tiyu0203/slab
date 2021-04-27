@@ -5,6 +5,7 @@ import sounddevice as sd
 import soundfile as sf
 import numpy as np
 from scipy.integrate import simps
+from scipy import signal 
 
 def int_or_str(text):
     """Helper function for argument parsing."""
@@ -38,18 +39,29 @@ try:
     data, fs = sf.read(args.filename, dtype='float32')
     print(fs)
     print(data.shape)
-    print(data)
-    #data = np.trapz(data,axis=0)
-    mean = np.mean(data)
-    print(mean)
-    data = simpts(data)
-    print(data.shape)
+
+    M = 1
+    data = 1 + M * data
     print(np.mean(data))
-    #data = np.trapz(data)
-    #print(data)
-    M = .6
-    data = np.sqrt(1 + M * data)
-    sd.play(data, fs, device=args.device)
+    #data = data -1;
+    
+    f_target = 192000;
+    resamp = signal.resample(data, f_target//fs * data.shape[0], axis=0) 
+    print(resamp.shape)
+    
+    f_mod = 40000
+    
+    mod_wave = np.sin(2*np.pi*f_mod*np.linspace(0, data.shape[0]/fs, resamp.shape[0]))
+    mod_wave = np.array([mod_wave,mod_wave]).T
+    print(mod_wave.shape)
+    
+    
+    #out = resamp.dot(mod_wave)
+    out = resamp * mod_wave
+    #out = np.multiply(resamp, mod_wave);
+    print(out)
+    
+    sd.play(out, f_target, device=args.device)
     status = sd.wait()
     
 except KeyboardInterrupt:
