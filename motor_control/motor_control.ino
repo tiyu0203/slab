@@ -16,7 +16,7 @@ union {
 } buffer;
 
 // stepper motor configuration 
-Stepper altitude(200,4,5,6,7);
+Stepper altitude(200,4,6,7,5);
 
 void setup() {
   // put your setup code here, to run once:
@@ -92,10 +92,10 @@ void loop() {
   }
 
   // Run some steps for stepper motor
-  if (buffer.s.step_count % n_steps > 0) {
+  if (buffer.s.step_count / n_steps > 0) {
     altitude.step(n_steps);
     buffer.s.step_count -= n_steps;
-  } else if (buffer.s.step_count % n_steps < 0) {
+  } else if (buffer.s.step_count / n_steps < 0) {
     altitude.step(-n_steps);
     buffer.s.step_count += n_steps;
   }
