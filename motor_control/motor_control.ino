@@ -66,6 +66,11 @@ void loop() {
     if ( sizeof(buffer) == num && buffer.s.checksum == checksum()) {
       altitude.setSpeed(buffer.s.step_speed);
       start_time = millis();
+    } else { // invalid command received
+      for (int i=0; i<sizeof(buffer); i++) {
+        buffer[i] = 0; // null out the buffer
+        // should probably have 2 buffers 
+      }
     }
   }
 
@@ -78,7 +83,7 @@ void loop() {
       analogWrite(DC2, 0);
     } else {
       analogWrite(DC1, 0);
-      analogWrite(DC2, rate);
+      analogWrite(DC2, -rate);
     }
   } else {
     // stop rotation
@@ -87,10 +92,10 @@ void loop() {
   }
 
   // Run some steps for stepper motor
-  if (buffer.s.step_count > 0) {
+  if (buffer.s.step_count % n_steps > 0) {
     altitude.step(n_steps);
     buffer.s.step_count -= n_steps;
-  } else if (buffer.s.step_count < 0) {
+  } else if (buffer.s.step_count % n_steps < 0) {
     altitude.step(-n_steps);
     buffer.s.step_count += n_steps;
   }
