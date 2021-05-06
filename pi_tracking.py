@@ -59,6 +59,11 @@ if not args.get("video", False):
 else:
 	vs = cv2.VideoCapture(args["video"])
 
+def send_data(s_speed, s_step, d_speed, d_step):
+	commands = struct.pack('<i', s_speed) + struct.pack('<h', s_step) + struct.pack('<h', d_speed) + struct.pack('<h', d_step)
+	checksum = sum(commands)
+	ser.write(commands + struct.pack('<h', checksum))
+
 def compute_vector(x,y,w,h):
     return x+w//2, y+h//2
 
@@ -93,9 +98,11 @@ while True:
 		cv2.arrowedLine(frame, cp, center, (0,255,0),3,8,0,0.1)
 		if x > center[0]:
 			print(x-center[0])
+			send_data(0,0,-100,100)
 		if x + w < center[0]:
 			print(x + w - center[0])
-
+			send_data(0,0,100,100)
+		
 	# show the output frame
 	cv2.imshow("Frame", frame)
 	key = cv2.waitKey(1) & 0xFF
@@ -127,5 +134,4 @@ else:
 
 # close all windows
 cv2.destroyAllWindows()
-
-GPIO.cleanup()
+ser.close()
