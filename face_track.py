@@ -74,8 +74,8 @@ while True:
 	X = Mx.update(Dx)
 	Y = My.update(Dy)
 	print("Mx:", X, "My:", Y)
-	controller.send(abs(X), X, Y, 100)
-		
+	controller.send(abs(Y), Y, X, 100)
+	#controller.send(0, 0, X, 100)
 	cv2.imshow('Capture - Face detection', frame)
 
 	#cv2.imshow("Frame", gray)

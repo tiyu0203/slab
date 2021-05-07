@@ -11,5 +11,6 @@ class Controller:
 				   struct.pack('<h', int(pan_speed)) + \
 				   struct.pack('<H', int(pan_ms))
 		checksum = struct.pack('<h', sum(commands))
+		#print(commands)
 		self.ser.write(commands + checksum)
 	
