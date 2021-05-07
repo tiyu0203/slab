@@ -1,7 +1,19 @@
 #include <Stepper.h>
+#include <avr/interrupt.h>
 // DC motor configuration 
 #define DC1 10
 #define DC2 11
+
+// pan limit switches
+#define PLIM1 A0 
+#define PLIM2 A1
+// tilt/altitude limit switches 
+#define TLIM1 A2
+#define TLIM2 A3
+
+#define ISRDELAY 10
+
+#define sign(x) ((x>0)-(x<0))
 
 // serial message decoding struct union thing 
 union {
@@ -9,7 +21,7 @@ union {
     long step_speed;
     int  step_count;
     int  dc_speed;
-    int  dc_count;
+    unsigned int  dc_count;
     int checksum;
   } s;
   char bytes[sizeof(cm)];
@@ -18,11 +30,55 @@ union {
 // stepper motor configuration 
 Stepper altitude(200,4,6,7,5);
 
+byte lim_state;
+
+void limit_check()
+{ 
+  // should probably replace with analog read but whatever
+  if (~PINC & 0x01) {
+    // shut down if moving in direction of limit switch, otherwise do nothing
+    if (buffer.s.dc_speed > 0)
+      buffer.s.dc_count = 0;
+      lim_state |= 0x01;
+  }
+  if (~PINC & 0x02) {
+    if (buffer.s.dc_speed < 0)
+      buffer.s.dc_count = 0;
+      lim_state |= 0x02;
+  }
+  if (~PINC & 0x04) {
+    if (buffer.s.step_count > 0)
+      buffer.s.step_count = 0;
+      lim_state |= 0x04;
+  }
+  if (~PINC & 0x08) {
+    if (buffer.s.step_count < 0)
+      buffer.s.step_count = 0;
+      lim_state |= 0x08;
+  }
+}
+
+ISR(PCINT1_vect) 
+{
+  limit_check();
+}
+
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
   pinMode(DC1, OUTPUT);
   pinMode(DC2, OUTPUT);
+
+  pinMode(PLIM1, INPUT_PULLUP);
+  pinMode(PLIM2, INPUT_PULLUP);
+  pinMode(TLIM1, INPUT_PULLUP);
+  pinMode(TLIM2, INPUT_PULLUP);
+  
+  cli();
+  PCICR |= 0x02;
+  PCMSK1 |= 0x0F;
+  sei();
+  
+  Serial.begin(115200);
 }
 
 // compute checksum to make sure received data is valid
@@ -36,7 +92,8 @@ int checksum() {
 }
 
 void print_debug(int num) {
-  Serial.print(num, DEC);
+  Serial.print(lim_state, HEX);
+  //Serial.print(num, DEC);
   Serial.print(' ');
   Serial.print(buffer.s.step_speed, DEC);
   Serial.print(' ');
@@ -61,15 +118,19 @@ unsigned long start_time;
 void loop() {
   // put your main code here, to run repeatedly:
   if (Serial.available() > 0) {
-    int num = Serial.readBytesUntil('\n', buffer.bytes, sizeof(buffer));
-    print_debug(num); //disable debug for more speed 
+    int num = Serial.readBytes(buffer.bytes, sizeof(buffer));
     if ( sizeof(buffer) == num && buffer.s.checksum == checksum()) {
+      lim_state = 0;
+      limit_check();
+      //print_debug(num);
       altitude.setSpeed(buffer.s.step_speed);
       start_time = millis();
-    } else { // invalid command received
+    } else { 
+      // invalid command received
+      // null out the buffer
+      //Serial.println("Invalid data");
       for (int i=0; i<sizeof(buffer); i++) {
-        buffer[i] = 0; // null out the buffer
-        // should probably have 2 buffers 
+        buffer.bytes[i] = 0;
       }
     }
   }
@@ -91,15 +152,8 @@ void loop() {
     analogWrite(DC2, 0);
   }
 
-  // Run some steps for stepper motor
-  if (buffer.s.step_count / n_steps > 0) {
+  if (buffer.s.step_count / n_steps) {
     altitude.step(n_steps);
-    buffer.s.step_count -= n_steps;
-  } else if (buffer.s.step_count / n_steps < 0) {
-    altitude.step(-n_steps);
-    buffer.s.step_count += n_steps;
+    buffer.s.step_count -= sign(buffer.s.step_count)*n_steps;
   }
-
-  
-  
 }
