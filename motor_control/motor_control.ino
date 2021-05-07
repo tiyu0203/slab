@@ -31,7 +31,10 @@ union {
 Stepper altitude(200,4,6,7,5);
 
 byte lim_state;
-ISR(PCINT1_vect) {
+
+void limit_check()
+{ 
+  // should probably replace with analog read but whatever
   if (~PINC & 0x01) {
     // shut down if moving in direction of limit switch, otherwise do nothing
     if (buffer.s.dc_speed > 0)
@@ -39,23 +42,25 @@ ISR(PCINT1_vect) {
       lim_state |= 0x01;
   }
   if (~PINC & 0x02) {
-    // shut down if moving in direction of limit switch, otherwise do nothing
     if (buffer.s.dc_speed < 0)
       buffer.s.dc_count = 0;
       lim_state |= 0x02;
   }
   if (~PINC & 0x04) {
-    // shut down if moving in direction of limit switch, otherwise do nothing
     if (buffer.s.step_count > 0)
       buffer.s.step_count = 0;
       lim_state |= 0x04;
   }
   if (~PINC & 0x08) {
-    // shut down if moving in direction of limit switch, otherwise do nothing
     if (buffer.s.step_count < 0)
       buffer.s.step_count = 0;
       lim_state |= 0x08;
   }
+}
+
+ISR(PCINT1_vect) 
+{
+  limit_check();
 }
 
 void setup() {
@@ -115,9 +120,11 @@ void loop() {
   if (Serial.available() > 0) {
     //int num = Serial.readBytesUntil('\n', buffer.bytes, sizeof(buffer));
     int num = Serial.readBytes(buffer.bytes, sizeof(buffer));
-    print_debug(num); //disable debug for more speed 
+    //print_debug(num); //disable debug for more speed 
     if ( sizeof(buffer) == num && buffer.s.checksum == checksum()) {
       lim_state = 0;
+      limit_check();
+      print_debug(num);
       altitude.setSpeed(buffer.s.step_speed);
       start_time = millis();
     } else { // invalid command received
