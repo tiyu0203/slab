@@ -153,7 +153,7 @@ void loop() {
   }
 
   if (buffer.s.step_count / n_steps) {
-    altitude.step(n_steps);
+    altitude.step(sign(buffer.s.step_count) * n_steps);
     buffer.s.step_count -= sign(buffer.s.step_count)*n_steps;
   }
 }
