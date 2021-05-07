@@ -118,19 +118,19 @@ unsigned long start_time;
 void loop() {
   // put your main code here, to run repeatedly:
   if (Serial.available() > 0) {
-    //int num = Serial.readBytesUntil('\n', buffer.bytes, sizeof(buffer));
     int num = Serial.readBytes(buffer.bytes, sizeof(buffer));
-    //print_debug(num); //disable debug for more speed 
     if ( sizeof(buffer) == num && buffer.s.checksum == checksum()) {
       lim_state = 0;
       limit_check();
-      print_debug(num);
+      //print_debug(num);
       altitude.setSpeed(buffer.s.step_speed);
       start_time = millis();
-    } else { // invalid command received
+    } else { 
+      // invalid command received
+      // null out the buffer
+      //Serial.println("Invalid data");
       for (int i=0; i<sizeof(buffer); i++) {
-        buffer.bytes[i] = 0; // null out the buffer
-        // should probably have 2 buffers 
+        buffer.bytes[i] = 0;
       }
     }
   }
