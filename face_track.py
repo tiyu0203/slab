@@ -4,10 +4,16 @@ import time
 import cv2
 from collections import deque 
 import numpy as np
+from pid import PID
 
+# https://en.wikipedia.org/wiki/PID_controller#Pseudocode
+# https://sci-hub.scihubtw.tw/10.1109/ICETC.2010.5529177
+# https://sci-hub.scihubtw.tw/10.1109/icsengt.2017.8123449
 face_cascade = cv2.CascadeClassifier()
-face_cascade.load(cv2.samples.findFile('/home/nteplitskiy/Documents/Classes/Final_Project/slab/venv/lib64/python3.9/site-packages/cv2/data/haarcascade_frontalface_alt.xml'))
-# lol
+face_cascade.load(cv2.samples.findFile('venv/lib64/python3.9/site-packages/cv2/data/haarcascade_frontalface_alt.xml'))
+
+Mx = PID()
+My = PID()
 
 print("[INFO] starting video stream...")
 vs = VideoStream(src=0).start()
@@ -38,8 +44,13 @@ def detectAndDisplay(frame):
 def computeCenter(frame, box):
 	(x,y,w,h) = box
 	face_center = (x + w//2, y + h//2)
+	(Dx, Dy) = tuple(np.subtract(frame_center, face_center))
 	cv2.arrowedLine(frame, face_center, frame_center, (0,255,0),3,8,0,0.1)
-	return frame
+	return Dx, Dy, frame
+
+def sendCommand(Dx, Dy):
+	# send command to serial arduino controller 
+	...
 
 while True:
 	frame = vs.read()
@@ -53,7 +64,15 @@ while True:
 	cv2.circle(frame,frame_center,4,(0,0,255),6)
 	
 	if len(faces) != 0:
-		frame = computeCenter(frame, faces[0])
+		(Dx, Dy, frame) = computeCenter(frame, faces[0])
+	else:
+		Mx.reset()
+		My.reset()
+		
+	# need to check if motion is really necessary, 
+	# don't need to move if in some threshold value
+	
+	print("Mx:", Mx.update(Dx), "My:", My.update(Dy))
 		
 	cv2.imshow('Capture - Face detection', frame)
 
