@@ -5,6 +5,8 @@ import cv2
 from collections import deque 
 import numpy as np
 from pid import PID
+from motor import Controller 
+import sys
 
 # https://en.wikipedia.org/wiki/PID_controller#Pseudocode
 # https://sci-hub.scihubtw.tw/10.1109/ICETC.2010.5529177
@@ -14,6 +16,8 @@ face_cascade.load(cv2.samples.findFile('venv/lib64/python3.9/site-packages/cv2/d
 
 Mx = PID()
 My = PID()
+
+controller = Controller(sys.argv[1])
 
 print("[INFO] starting video stream...")
 vs = VideoStream(src=0).start()
@@ -48,10 +52,6 @@ def computeCenter(frame, box):
 	cv2.arrowedLine(frame, face_center, frame_center, (0,255,0),3,8,0,0.1)
 	return Dx, Dy, frame
 
-def sendCommand(Dx, Dy):
-	# send command to serial arduino controller 
-	...
-
 while True:
 	frame = vs.read()
 	if frame is None:
@@ -71,8 +71,10 @@ while True:
 		
 	# need to check if motion is really necessary, 
 	# don't need to move if in some threshold value
-	
-	print("Mx:", Mx.update(Dx), "My:", My.update(Dy))
+	X = Mx.update(Dx)
+	Y = My.update(Dy)
+	print("Mx:", X, "My:", Y)
+	controller.send(abs(X), X, Y, 100)
 		
 	cv2.imshow('Capture - Face detection', frame)
 

@@ -15,7 +15,7 @@ print(step_speed, step_count, dc_speed, dc_millis)
 #print(struct.pack('<h', dc_speed))
 #print(struct.pack('<h', dc_millis))
 
-commands = struct.pack('<i', step_speed) + struct.pack('<h', step_count) + struct.pack('<H', dc_speed) + struct.pack('<h', dc_millis)
+commands = struct.pack('<i', step_speed) + struct.pack('<h', step_count) + struct.pack('<h', dc_speed) + struct.pack('<H', dc_millis)
 print(commands.hex())
 checksum = sum(commands)
 print(checksum)
