@@ -111,7 +111,7 @@ void print_debug(int num) {
 
 // number of steps to take for each program loop
 // perhaps set to 1?
-int n_steps = 10;
+int n_steps = 1; //this has some issues, don't know if necessary
 // start time for DC motor 
 unsigned long start_time;
 
