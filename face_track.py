@@ -12,10 +12,12 @@ import sys
 # https://sci-hub.scihubtw.tw/10.1109/ICETC.2010.5529177
 # https://sci-hub.scihubtw.tw/10.1109/icsengt.2017.8123449
 face_cascade = cv2.CascadeClassifier()
-face_cascade.load(cv2.samples.findFile('venv/lib64/python3.9/site-packages/cv2/data/haarcascade_frontalface_alt.xml'))
+face_cascade.load(cv2.samples.findFile('venv/lib/python3.7/site-packages/cv2/data/haarcascade_frontalface_alt.xml'))
 
-Mx = PID()
-My = PID()
+#Mx = PID(kP=2, kI=.5)
+Mx = PID(kP=1)
+
+My = PID(kP=.1)
 
 controller = Controller(sys.argv[1])
 
@@ -51,13 +53,14 @@ def computeCenter(frame, box):
 	(Dx, Dy) = tuple(np.subtract(frame_center, face_center))
 	cv2.arrowedLine(frame, face_center, frame_center, (0,255,0),3,8,0,0.1)
 	return Dx, Dy, frame
-
+Dx = 0
+Dy = 0
 while True:
 	frame = vs.read()
 	if frame is None:
 		break;
 	
-	frame = imutils.resize(frame, width=600)
+	frame = imutils.resize(frame, width=400)
 	frame, faces = detectAndDisplay(frame)
 	
 	frame_center = frame.shape[1]//2, frame.shape[0]//2
@@ -74,7 +77,7 @@ while True:
 	X = Mx.update(Dx)
 	Y = My.update(Dy)
 	print("Mx:", X, "My:", Y)
-	controller.send(abs(Y), Y,-X, 100)
+	controller.send(abs(Y), -Y,-X, 50)
 	#controller.send(0, 0, X, 100)
 	cv2.imshow('Capture - Face detection', frame)
 
